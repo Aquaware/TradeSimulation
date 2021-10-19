@@ -43,14 +43,16 @@ def awarePyTimeList2Float(aware_pytime_list):
 class CandleGraphic:
     def __init__(self, py_time, ohlc, box_width):
         GREEN = '#00aa88'
-        RED = '#ff6666'
+        BLUE = '#4444ff'
+        RED = '#ff9999'
+        ORANGE = '#ffaa99'
         self.box_width = box_width
         self.line_width = 1.0
         self.alpha = 0.7
-        self.color_positive = GREEN
-        self.box_line_color_positive = 'green'
-        self.color_negative = RED
-        self.box_line_color_negative = 'red'
+        self.color_positive = BLUE
+        self.box_line_color_positive = 'blue'
+        self.color_negative = ORANGE
+        self.box_line_color_negative = 'orange'
         
         t = awarePyTime2Float(py_time)
         open = ohlc[0]
@@ -122,6 +124,7 @@ class BoxGraphic:
         ax.add_patch(self.rect)
         return
 # -----
+
     
 class CandlePlot:
     def __init__(self, fig, ax, title, date_format=DATE_FORMAT_TIME):
@@ -170,7 +173,7 @@ class CandlePlot:
             self.graphic_objects.append(obj)
             
         if vmin is not None and vmax is not None:
-            dw = (vmax - vmin) * 0.4
+            dw = (vmax - vmin) * 0.05
             self.ylimit([vmin - dw, vmax + dw])
             
         self.ax.autoscale_view()
@@ -275,14 +278,51 @@ class BandPlot:
         self.ax.autoscale_view()
         return        
         
-    def drawLine(self, time, value, color='red', linestyle='solid', linewidth=1.0):
-        self.ax.plot(time, value, color=color, linestyle=linestyle, linewidth=linewidth)
+    def drawLine(self, time, value, color='red', linestyle='solid', linewidth=1.0, timerange=None):
+        if timerange is not None:
+            begin = None
+            end = None
+            vmin = None
+            vmax = None
+            for i in range(len(time)):
+                t = time[i]
+                if begin is None:
+                    if t >= timerange[0]:
+                        begin = i
+                        vmin = value[i]
+                        vmax = vmin
+                else:
+                    if t <= timerange[1]:
+                        if vmin > value[i]:
+                            vmin = value[i]
+                        if vmax < value[i]:
+                            vmax = value[i]
+                    else:
+                        end = i - 1
+                        break
+            if begin is None:
+                begin = 0
+            if end is None:
+                end = len(time) - 1
+            time2 = time[begin: end + 1]
+            value2 = value[begin: end + 1]
+        else:
+            time2 = time
+            vmin = np.min(value)
+            vmax = np.max(value)
+            value2 = value
+        
+        self.ylimit((vmin, vmax))
+        self.ax.plot(time2, value2, color=color, linestyle=linestyle, linewidth=linewidth)
         return     
     
     def xlimit(self, trange):
         x0 = awarePyTime2Float(trange[0])
         x1 = awarePyTime2Float(trange[1])
         self.ax.set_xlim(x0, x1)
+        
+    def ylimit(self, yrange):
+        self.ax.set_ylim(yrange[0], yrange[1])
         
 #-----------
     
